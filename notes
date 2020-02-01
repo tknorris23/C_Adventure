@@ -1,0 +1,27 @@
+This assignment must use C89.
+Two files:
+norristh.buildrooms.c
+norristh.adventure.c
+
+## ROOMS ##
+Step 1: Create directory called norristh.roooms.{PID}
+	Q1: How to get PID in C?
+	A: using the unistd.h library, getpid() returns the PID
+	Q2: How to create a directory in C?
+	A: using sys/stat.h and sys/types.h (is sys/ needed?):
+	mkdir("./pathname", 0777);
+Step 2: Create 7 room files chosen from 10 potential names
+	filename: {name}_room
+	Use array of strings to pull from?
+	Q3: How to do randomization in C?
+	A: using stdlib.h, int x = random() % 9
+	Randomize array index, check if that index has been used already
+	Create file from that index
+	Add that index to list of used indices
+	P1: How should I list used indices? An array of ints?
+	Q4: How to create files in C? open()? fopen?
+Step 3: Assign outbound connections using psuedo code from Canvas
+Step 4: Assign START_ROOM, MID_ROOM(s) and END_ROOM
+
+Rooms gives no output to console.
+	
