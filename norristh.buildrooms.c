@@ -37,8 +37,9 @@ int IsGraphFull(struct room rooms[7])
     //initialize looping vars
     int counter;
     int check;
-    check = 0;
+    check = 1;
     int i, j;
+    char* no = "";
     //  Pull in the array of room structs.
     //  For each room, go through connections array.
     //  If there is a connection, that index will not be null, add to a counter.
@@ -47,28 +48,26 @@ int IsGraphFull(struct room rooms[7])
     //  If all connections are between 3 and 6, return 1 (true)
     for (i = 0; i < 7; i++) 
     {
+        
         counter = 0;
         for (j=0; j < 6; j++) 
         {
-            if (rooms[i].connections[j] != "") 
+            if (strcmp(rooms[i].connections[j], no) != 0) 
             {
                 counter++;
             }
         }
-        if (counter < 7 && counter > 2) 
-        {
+        if (counter < 3) 
+        {        
             check = 0;
-        }
-        else {
-            check = 1;
         }
     }
     //Return logic values based on value of check
-    if (check == 1) 
+    if (check == 0) 
     {
         return 0;
     }
-    else 
+    else if (check == 1)
     {
         return 1;
     }
@@ -258,10 +257,8 @@ main()
     }
     
     //Next step is to create room structs and files from name indexes acquired
-    printf("Beginning file creation\n");
     struct room rooms[7];
     char roomName[20];
-    printf("Starting for loop:\n");
     for (i = 0; i < 7; i++)
     {
         //printf("For loop: %d\n", i);
@@ -281,11 +278,8 @@ main()
 
         //Get room name from list of names
         strcpy(roomName, roomNames[rindi[i]]);
-        printf("roomNames[rindi[%d]] = %s\n", i, roomNames[rindi[i]] );
         //Set struct name
         strcpy(rooms[i].name, roomName);
-        printf("rooms[%d].name = %s\n", i, rooms[i].name);
-        printf("The previous name is: %s\n", rooms[i].name);
         //Start creating header for file
         char header[] = "ROOM NAME: ";
         //Add room name to header
@@ -303,7 +297,7 @@ main()
         //open / create file from path
         file = fopen(path, "w");
         //Add header to file
-        for (j = 0; header[j] != '\n'; j++)
+        for (j = 0; header[j] != '\0'; j++)
         {
             fputc(header[j], file);
         }
@@ -322,10 +316,122 @@ main()
     //Fill room graph with connections. This only does the struct, files are next.
     while (IsGraphFull(rooms) == 0)
     {
-        printf("Adding connection...\n");
         AddRandomConnection(rooms);
     }
 
     //Add connections to files
-
+    //loop through array of rooms
+    int k;
+    for (i = 0; i < 7; i++)
+    {
+        //Get room names and make a path to its file
+        //printf("For loop: %d\n", i);
+        //get pid from unistd.h function
+        pid = getpid();
+        //norristh.rooms.{pid}
+        //Create first part of path
+        char path[20]= "norristh.rooms.";
+        //Create string to put pid into
+        char pidString[20];
+        //Set string equal to int(pid)
+        sprintf(pidString, "%d", pid);
+        //Concatenate first part of path with pid string
+        strcat(path, pidString);
+        //Add slash to path
+        strcat(path, "/");
+        strcpy(roomName, roomNames[rindi[i]]);
+        //Add _room to room name for file
+        //Add file name to path
+        //Add _room to room name for file
+        strcat(roomName, "_room");
+        //Add file name to path
+        strcat(path, roomName);
+        strcpy(roomName, roomNames[rindi[i]]);
+        //create file pointer
+        FILE *file;
+        //open file from path
+        file = fopen(path, "a");
+        //Add header to file
+        //Loop through connections
+        char* no = "";
+        for (j = 0; j < 6; j++)
+        {
+            //if connection = "", skip
+            if (strcmp(rooms[i].connections[j], no) != 0)
+            {
+                char front[100] = "CONNECTION ";
+                char jstring[10] = "";
+                sprintf(jstring, "%d", j);
+                strcat(front, jstring);
+                strcat(front, ": ");
+                strcat(front, rooms[i].connections[j]);
+                strcat(front, "\n");
+                //else, add CONNECTION {j}}: connection[j]
+                for (k = 0; front[k] != '\0'; k++)
+                {
+                    fputc(front[k], file);
+                }
+            }
+            
+        }
+        //close file
+        fclose(file);
+    }
+    //Add room types to files
+   
+    for(i = 0; i < 7; i++)
+    {
+        char front[100] = "ROOM TYPE: ";
+        //Get room names and make a path to its file
+        //printf("For loop: %d\n", i);
+        //get pid from unistd.h function
+        pid = getpid();
+        //norristh.rooms.{pid}
+        //Create first part of path
+        char path[20]= "norristh.rooms.";
+        //Create string to put pid into
+        char pidString[20];
+        //Set string equal to int(pid)
+        sprintf(pidString, "%d", pid);
+        //Concatenate first part of path with pid string
+        strcat(path, pidString);
+        //Add slash to path
+        strcat(path, "/");
+        strcpy(roomName, roomNames[rindi[i]]);
+        //Add _room to room name for file
+        //Add file name to path
+        //Add _room to room name for file
+        strcat(roomName, "_room");
+        //Add file name to path
+        strcat(path, roomName);
+        strcpy(roomName, roomNames[rindi[i]]);
+        //create file pointer
+        FILE *file;
+        //open file from path
+        file = fopen(path, "a");
+        //if first room, give START_ROOM type
+        if (i == 0)
+        {
+            strcat(front, "START_ROOM\n");
+            for(j = 0; front[j] != '\0'; j++)
+            {
+                fputc(front[j], file);
+            }
+        }
+        //if not last room, give MID_ROOM type
+        else if (i < 6) {
+            strcat(front, "MID_ROOM\n");
+            for(j = 0; front[j] != '\0'; j++)
+            {
+                fputc(front[j], file);
+            }
+        }
+        else if (i == 6) {
+            strcat(front, "END_ROOM\n");
+            for(j = 0; front[j] != '\0'; j++)
+            {
+                fputc(front[j], file);
+            }
+        }
+    }
 }
