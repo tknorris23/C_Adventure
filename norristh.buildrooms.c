@@ -6,7 +6,19 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+////////////////////////////////////////////////////////////////
+//
+//  Thomas Kelly Norris
+//  CS344 Operating Systems Winter 2020 Oregon State University
+//  February 7th, 2020
+//  Program 2 - Adventure
+//  Buildrooms file
+//  This program creates a directory and 7 files for rooms
+//      to be used in the "adventure" program.
+//
+/////////////////////////////////////////////////////////////////
 
+//room struct for storing information
 struct room
 {
     char name[10];
@@ -85,6 +97,7 @@ struct room * GetRandomRoom(struct room rooms[7])
     return &rooms[index];
 }
 
+//  Function that checks if a room can have a new connection added
 int CanAddConnectionFrom(struct room* x)
 {
     //initialize looping vars
@@ -111,6 +124,7 @@ int CanAddConnectionFrom(struct room* x)
     }
 }
 
+//  Function to check if a connection already exists between two rooms
 int ConnectionAlreadyExists(struct room* x, struct room* y) {
     //initialize looping vars
     int j;
@@ -127,6 +141,7 @@ int ConnectionAlreadyExists(struct room* x, struct room* y) {
     return 0;
 }
 
+//  Adds a connection between two rooms
 void ConnectRoom(struct room* x, struct room* y)
 {
     //initialize looping vars
@@ -154,6 +169,7 @@ void ConnectRoom(struct room* x, struct room* y)
 // Checks if two input rooms are the same by checking their name
 int IsSameRoom(struct room* x, struct room* y)
 {
+    //could use strcmp() but if they're the same room, the name location would be the same
     if (x->name == y->name) 
     {
         return 1;
@@ -188,6 +204,7 @@ void AddRandomConnection(struct room rooms[7])
     }
 
     //This do-while loop gets a random room for B given it won't conflict with A
+    //  Fairly certain this loop adds the most to run time
     do
     {
         B = GetRandomRoom(rooms);
@@ -304,10 +321,14 @@ main()
         //close file
         fclose(file);
 
+        //reset roomName
         char* no = "";
         strcpy(roomName, no);
     }
     //PART 1 DONE!
+
+
+
     //PART 2 - ROOM CONNECTIONS
 
     //Initialize connections with known null values
@@ -359,6 +380,7 @@ main()
             //if connection = "", skip
             if (strcmp(rooms[i].connections[j], no) != 0)
             {
+                //else, add CONNECTION {j}: connection[j]\n to file
                 char front[100] = "CONNECTION ";
                 char jstring[10] = "";
                 sprintf(jstring, "%d", j);
@@ -366,7 +388,7 @@ main()
                 strcat(front, ": ");
                 strcat(front, rooms[i].connections[j]);
                 strcat(front, "\n");
-                //else, add CONNECTION {j}}: connection[j]
+                
                 for (k = 0; front[k] != '\0'; k++)
                 {
                     fputc(front[k], file);
@@ -377,8 +399,9 @@ main()
         //close file
         fclose(file);
     }
+
     //Add room types to files
-   
+    //  Note that since the array of rooms is randomized, so is room type assignment
     for(i = 0; i < 7; i++)
     {
         char front[100] = "ROOM TYPE: ";
@@ -426,6 +449,7 @@ main()
                 fputc(front[j], file);
             }
         }
+        //if last room, give END_ROOM type
         else if (i == 6) {
             strcat(front, "END_ROOM\n");
             for(j = 0; front[j] != '\0'; j++)

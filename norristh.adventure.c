@@ -7,10 +7,66 @@
 #include <stdlib.h>
 #include <time.h>
 #include <dirent.h>
+#include <pthread.h>
 
+////////////////////////////////////////////////////////////////
+//
+//  Thomas Kelly Norris
+//  CS344 Operating Systems Winter 2020 Oregon State University
+//  February 7th, 2020
+//  Program 2 - Adventure
+//  Adventure file
+//  This program reads in data from files made by buildrooms
+//      and plays a simple terminal adventure game.
+//  !!VERY IMPORTANT NOTE!!
+//  adventure will ONLY work if it's run directly after buildrooms!
+//      command sequence should be:
+//
+//  gcc -o buildrooms norristh.buildrooms.c
+//  gcc -o adventure norristh.adventure.c
+//  buildrooms
+//  adventure
+//
+//  Behavior is undefined if not ran this way, and will probably
+//      lead to a segfault.
+//
+/////////////////////////////////////////////////////////////////
+
+//function for thread that grabs time
+void * start_routine(void *mewtex)
+{
+    //Attempts to lock mewtex, and will stall until able
+    pthread_mutex_lock(mewtex);
+    //Set vars
+    char times[200];
+    time_t t;
+    struct tm *tmp;
+    t = time(NULL);
+    tmp = localtime(&t);
+    //Get time from strftime
+    strftime(times, sizeof(times), "%c", tmp);
+    //Open / create file and write time into it
+    FILE *fp;
+    fp = fopen("currentTime.txt", "w");
+    int i;
+    for(i = 0; times[i] != '\0'; i++)
+    {
+        fputc(times[i], fp);
+    }
+    //close file
+    fclose(fp);
+    //unlock mewtex
+    pthread_mutex_unlock(mewtex);
+}
 
 main() 
 {
+    //create thread and mutex for timekeeping
+    pthread_mutex_t mewtex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&mewtex);
+    pthread_t thread;
+    pthread_create(&thread, NULL, &start_routine, &mewtex);
+    
     //set vars
     //the code block to get most recent modified directory acquired from
     //https://stackoverflow.com/questions/42170824/use-stat-to-get-most-recently-modified-directory
@@ -86,6 +142,7 @@ main()
     char cur_connections[6][50] = {"", "", "", "", "", ""};
     int steps = 0;
     char step_path[100][50];
+    //clear memory of step_path
     for(i = 0; i < 100; i++)
     {
         memset(step_path[i], 0, sizeof(step_path[i]));
@@ -142,13 +199,12 @@ main()
             }
             
         }
-        //reset j... later
-        //j = 0;
         //close the file
         fclose(fp);
         // -- END BLOCK 1 --//
 
         // -- BLOCK 1.5: STEP -- //
+        //if changing to a new room, add to step list and counter
         if(change == 1 && first != 1)
         {
             strcpy(step_path[steps], cur_name);
@@ -159,11 +215,12 @@ main()
         {
             printf("CURRENT LOCATION: %s\n", cur_name);
             //make the string for current connections
-
-        
+            // if change = 1, get new connections from new room
             if(change == 1)
             {
+                //reset connections string
                 memset(possible_connections,0,sizeof(possible_connections));
+                //go through connections and add to string
                 for(i = 0; i < 6; i++)
                 {
                     if(i < j-1)
@@ -172,6 +229,7 @@ main()
                     strcat(possible_connections, ", ");
                     }
 
+                    //if last connection, add period and newline
                     if (i == j-1)
                     {
                         strcat(possible_connections, cur_connections[i]);
@@ -180,16 +238,35 @@ main()
                     
                 }
             }
+            //reset change and print string
             change = 0;
             printf("POSSIBLE CONNECTIONS: %s\n", possible_connections);
 
+            //get input from user
             printf("WHERE TO? >");
             char input[20];
             memset(input, 0,sizeof(input));
             fgets(input, 20, stdin);
             printf("\n");
+            //Check for time command
+            char time[50];
+            memset(time, 0, sizeof(time));
+            if(strstr(input, "time") != NULL)
+            {
+                //Unlock mewtex and join thread, wait until thread is done
+                pthread_mutex_unlock(&mewtex);
+                pthread_join(thread, NULL);
+                //Lock mewtex and recreate thread
+                pthread_mutex_lock(&mewtex);
+                pthread_create(&thread, NULL, &start_routine, &mewtex);
+                //Read info from file and print string
+                FILE *getTime;
+                getTime = fopen("currentTime.txt", "r");
+                getline(&line, &len, getTime);
+                printf(" %s\n\n", line);
+                fclose(getTime);
+            }
             int connect_lock = 0;
-            //get input from user
             //check if input is one of the connections
             for(i = 0; i < 6; i++)
             {
@@ -206,14 +283,18 @@ main()
                     strcpy(cur_room, filepath);
                 }
             }
-            if(change == 0)
+            //check for unknown command
+            if(change == 0 && strstr(input, "time") == NULL)
             {
                 printf("HUH? I DON'T KNOW THAT ROOM. TRY AGAIN.\n\n");
             }
+            //reset # of connections in current room, which is j
             j = 0;
         }
+        //Check for game over
         if(over == 1)
         {
+            //print game over text
             printf("YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
             printf("YOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n", steps);
             for (i = 0; strcmp(step_path[i], "") != 0; i++)
@@ -223,11 +304,5 @@ main()
             exit(0);
         }
         first = 0;
-        //if not print HUH??? statement
-        //if yes set that room to cur_room (have to rebuild the filepath...)
-        //  increment step count and add room name to path array
-        //  should path array just be an arbitrarily large array? no reqs on assignment
-        //hint for time thing on the assignment page
     } // end of game while loop
-    //print end stuff
 }
